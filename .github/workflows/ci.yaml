@@ -49,10 +49,18 @@ jobs:
             docs:
               - 'docs/*.md'
 
+      - name: Checkout base branch for PR comparison
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base-branch
+          fetch-depth: 1
+
       - name: Ensure newline at end of changed files
         if: ${{ steps.filter.outputs.go == 'true' || steps.filter.outputs.charts == 'true' || steps.filter.outputs.baseimage == 'true' || steps.filter.outputs.docs == 'true' }}
         run: |
-          BASE_BRANCH="origin/${{ github.event.pull_request.base.ref }}" ./hack/fix-newlines.sh
+          ./hack/fix-newlines.sh ./base-branch
+
 
   test-go:
     name: test-go

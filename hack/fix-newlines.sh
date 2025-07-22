@@ -1,29 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 
-# Get the base branch to compare against (e.g., "main")
-BASE_BRANCH="${BASE_BRANCH:-origin/main}"
+# Required: pass full path to the base branch checkout (clean copy of origin/main or base)
+BASE_BRANCH_DIR="$1"
 
-# Fetch base branch
-git fetch origin "$BASE_BRANCH"
+# Save current working directory (which is the PR branch)
+PR_BRANCH_DIR=$(pwd)
 
-# Get author of latest commit
-AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
-AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
-echo "Using author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
-
-# Get list of files changed between base branch and latest commit in PR
-CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD)
+# Compare PR branch to base branch to get changed files
+CHANGED_FILES=$(git diff --name-only --no-renames --diff-filter=ACMRT "$BASE_BRANCH_DIR" "$PR_BRANCH_DIR")
 
 echo "Changed files:"
 echo "$CHANGED_FILES"
 
+# Get author info of latest commit on PR branch
+AUTHOR_NAME=$(git -C "$PR_BRANCH_DIR" log -1 --pretty=format:'%an')
+AUTHOR_EMAIL=$(git -C "$PR_BRANCH_DIR" log -1 --pretty=format:'%ae')
+
+# Apply newline fixes
 echo "$CHANGED_FILES" | while read -r file; do
-  [ -f "$file" ] || continue
-  tail -c1 "$file" | read -r _ || echo >> "$file"
+  FILE_PATH="$PR_BRANCH_DIR/$file"
+  [ -f "$FILE_PATH" ] || continue
+  tail -c1 "$FILE_PATH" | read -r _ || echo >> "$FILE_PATH"
 done
 
-# Amend commit if there are changes
+# Check for any changes and amend commit
+cd "$PR_BRANCH_DIR"
 if ! git diff --quiet; then
   git add .
   git commit --amend --no-edit --author="$AUTHOR_NAME <$AUTHOR_EMAIL>"
