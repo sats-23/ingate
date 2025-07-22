@@ -1,32 +1,29 @@
 #!/bin/bash
 set -euo pipefail
 
-# Usage: ./hack/fix-newlines.sh <before-sha> <after-sha>
+# Get the base branch to compare against (e.g., "main")
+BASE_BRANCH="${BASE_BRANCH:-origin/main}"
 
-BEFORE_SHA="$1"
-AFTER_SHA="$2"
+# Fetch base branch
+git fetch origin "$BASE_BRANCH"
 
-# Get original commit author
+# Get author of latest commit
 AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
 AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
+echo "Using author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
 
-echo "Using original author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
-
-# List changed files between commits
-CHANGED_FILES=$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")
+# Get list of files changed between base branch and latest commit in PR
+CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD)
 
 echo "Changed files:"
 echo "$CHANGED_FILES"
 
 echo "$CHANGED_FILES" | while read -r file; do
-  # Skip deleted or non-existent files
   [ -f "$file" ] || continue
-
-  # Add newline at end of file if missing
   tail -c1 "$file" | read -r _ || echo >> "$file"
 done
 
-# Check and commit if any changes were made
+# Amend commit if there are changes
 if ! git diff --quiet; then
   git add .
   git commit --amend --no-edit --author="$AUTHOR_NAME <$AUTHOR_EMAIL>"

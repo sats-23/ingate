@@ -52,7 +52,7 @@ jobs:
       - name: Ensure newline at end of changed files
         if: ${{ steps.filter.outputs.go == 'true' || steps.filter.outputs.charts == 'true' || steps.filter.outputs.baseimage == 'true' || steps.filter.outputs.docs == 'true' }}
         run: |
-          ./hack/fix-newlines.sh ${{ github.event.before }} ${{ github.sha }}
+          BASE_BRANCH="origin/${{ github.event.pull_request.base.ref }}" ./hack/fix-newlines.sh
 
   test-go:
     name: test-go
