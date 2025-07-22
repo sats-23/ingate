@@ -244,4 +244,4 @@ misspell:  ## Check for spelling errors.
 	misspell \
 		-locale US \
 		-error \
-		cmd/* internal/* docs/* test/* charts/* README.md
+		cmd/* internal/* docs/* test/* charts/* README.md 
