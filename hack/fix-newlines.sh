@@ -41,7 +41,10 @@ done <<< "$FILES"
 if ! git diff --quiet; then
   git add .
   git commit --amend --no-edit --author="$AUTHOR_NAME <$AUTHOR_EMAIL>"
-  git push --force-with-lease
+
+  TARGET_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+  echo "Pushing to origin HEAD:$TARGET_BRANCH"
+  git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
 else
   echo "No newline fixes needed."
 fi
