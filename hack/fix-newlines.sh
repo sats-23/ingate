@@ -9,6 +9,9 @@ AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
 
 echo "Using original author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
 
+git config user.name "$AUTHOR_NAME"
+git config user.email "$AUTHOR_EMAIL"
+
 # Find only relevant files, excluding .git
 FILES=$(find . \
   \( -name "*.go" -o \
