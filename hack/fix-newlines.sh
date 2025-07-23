@@ -1,35 +1,47 @@
 #!/bin/bash
 set -euo pipefail
 
-# Required: pass full path to the base branch checkout (clean copy of origin/main or base)
-BASE_BRANCH_DIR="$1"
+# Fix line endings for only selected file types, and squash changes into the last commit
 
-# Save current working directory (which is the PR branch)
-PR_BRANCH_DIR=$(pwd)
+# Get original commit author
+AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
+AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
 
-# Compare PR branch to base branch to get changed files
-CHANGED_FILES=$(git diff --name-only --no-renames --diff-filter=ACMRT "$BASE_BRANCH_DIR" "$PR_BRANCH_DIR")
+echo "Using original author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
 
-echo "Changed files:"
-echo "$CHANGED_FILES"
+git config user.name "$AUTHOR_NAME"
+git config user.email "$AUTHOR_EMAIL"
 
-# Get author info of latest commit on PR branch
-AUTHOR_NAME=$(git -C "$PR_BRANCH_DIR" log -1 --pretty=format:'%an')
-AUTHOR_EMAIL=$(git -C "$PR_BRANCH_DIR" log -1 --pretty=format:'%ae')
+# Find only relevant files, excluding .git
+FILES=$(find . \
+  \( -name "*.go" -o \
+     -name "*.yaml" -o \
+     -name "*.yml" -o \
+     -name "*.sh" -o \
+     -name "*.md" -o \
+     -name "*.txt" -o \
+     -name "*.py" -o \
+     -name "Dockerfile" -o \
+     -name "Makefile" \) \
+  -not -path "./.git/*" \
+  -type f)
 
-# Apply newline fixes
-echo "$CHANGED_FILES" | while read -r file; do
-  FILE_PATH="$PR_BRANCH_DIR/$file"
-  [ -f "$FILE_PATH" ] || continue
-  tail -c1 "$FILE_PATH" | read -r _ || echo >> "$FILE_PATH"
-done
+echo "Checking files:"
+echo "$FILES"
 
-# Check for any changes and amend commit
-cd "$PR_BRANCH_DIR"
+# Add newline if missing
+while IFS= read -r file; do
+  # Skip binary files (optional, but useful for .bin or weird encodings)
+  if file "$file" | grep -q 'text'; then
+    tail -c1 "$file" | read -r _ || echo >> "$file"
+  fi
+done <<< "$FILES"
+
+# Check and commit if changes were made
 if ! git diff --quiet; then
   git add .
   git commit --amend --no-edit --author="$AUTHOR_NAME <$AUTHOR_EMAIL>"
   git push --force-with-lease
 else
-  echo "No changes to commit."
+  echo "No newline fixes needed."
 fi

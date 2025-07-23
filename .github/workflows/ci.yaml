@@ -57,9 +57,7 @@ jobs:
           fetch-depth: 1
 
       - name: Ensure newline at end of changed files
-        if: ${{ steps.filter.outputs.go == 'true' || steps.filter.outputs.charts == 'true' || steps.filter.outputs.baseimage == 'true' || steps.filter.outputs.docs == 'true' }}
-        run: |
-          ./hack/fix-newlines.sh ./base-branch
+        run: ./hack/fix-newlines.sh
 
 
   test-go:
